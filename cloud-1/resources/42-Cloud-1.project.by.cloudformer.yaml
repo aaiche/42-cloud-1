@@ -1,0 +1,27 @@
+Ai essaye de le faire fonctionner a la fin du projet: n a pas marche
+Mots cles : CloudFormer pour creer ce type de fichier
+
+Je ne sais pas si ce fichier contient des cles secretes: par securite je le vide!!!
+{
+  "Resources": {
+    "vpc0f201fcfd5d54bf6b": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.0.0.0/16",
+        "InstanceTenancy": "default",
+        "EnableDnsSupport": "true",
+        "EnableDnsHostnames": "true",
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "myVpcWordpress"
+          }
+        ]
+      }
+    },
+....
+....
+....
+....
+....
+}

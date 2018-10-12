@@ -1,0 +1,59 @@
+#!/bin/bash -x
+bash -ex << "TRY"
+   #---------------------------------------------------
+   # Logs are stored  in  /var/log/cloud-init-output.log
+   #---------------------------------------------------
+   # update
+   yum -y update
+   
+   # install httpd v2.4, php7. php70-mysqlnd (extension required by php to connect to mysql db), php70-opcach (optimise)
+   yum -y install httpd24 php70 php70-mysqlnd php70-opcache
+   
+   # wait until EFS file system is available
+   while ! nc -z fs-91c618c8.efs.eu-central-1.amazonaws.com 2049; do sleep 10; done
+   sleep 10
+   
+   # mount EFS file system
+   echo "fs-91c618c8.efs.eu-central-1.amazonaws.com:/ /var/www/  nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,_netdev 0 0" >> /etc/fstab
+   mount -a
+   
+   # ensure than only one machine installs wp
+#aa-   if mkdir /var/www/lock; then
+#aa-      cd /var/www/html
+#aa-      wget https://wordpress.org/latest.zip 
+#aa-      
+#aa-      # /var/www/html/wp-config.php
+#aa-      wget -q -T 60 https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+#aa-      if ! php wp-cli.phar core is-installed --allow-root; then
+#aa-         php wp-cli.phar core download --allow-root --version=4.8
+#aa-         php wp-cli.phar core config --dbname='wpDatabaseName' --dbuser='wpMasterUsername' --dbpass='wpMasterPassword' --dbhost='wpinstanceidentifier.c4hxxd9kxkqi.eu-central-1.rds.amazonaws.com' --allow-root
+#aa-      fi
+#aa-      chown -R apache:apache /var/www/html/
+#aa-      chmod 2775 /var/www
+#aa-      find /var/www -type d -exec chmod 2755 {} \;
+#aa-      rm wp-cli.phar
+#aa-   fi
+   
+   # config opcache
+   sed -i 's/;opcache.revalidate_freq=2/opcache.revalidate_freq=300/g' /etc/php-7.0.d/10-opcache.ini
+
+   # config httpd
+   perl -i -0pe 's/<Directory "\/var\/www">\n\s*AllowOverride None\n/<Directory "\/var\/www">\n    AllowOverride All\n/' /etc/httpd/conf/httpd.conf
+   chkconfig httpd on
+   
+   
+   
+   # configure Jenkins
+   #aa  sed -i -e 's/JENKINS_ARGS=""/JENKINS_ARGS="--argumentsRealm.passwd.admin=myPassword --argumentsRealm.roles.admin=admin"/g' /etc/sysconfig/jenkins
+   #aa   if [ ! -f /var/lib/jenkins/config.xml ]; then
+   #aa     echo '<?xml version="1.0" encoding="UTF-8"?><hudson><version>1.0</version><useSecurity>true</useSecurity><authorizationStrategy class="hudson.security.FullControlOnceLoggedInAuthorizationStrategy"/><securityRealm class="hudson.security.LegacySecurityRealm"/></hudson>' > /var/lib/jenkins/config.xml
+   #aa     chown jenkins:jenkins /var/lib/jenkins/config.xml
+   #aa   fi
+   
+   # start httpd
+   service httpd start
+   
+TRY
+#aa /opt/aws/bin/cfn-signal -e $? --stack jenkins-multiaz-efs --resource AutoScalingGroup --region us-east-1
+
+
