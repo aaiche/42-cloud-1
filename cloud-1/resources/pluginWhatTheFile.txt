@@ -1,0 +1,10 @@
+plugin what the file
+partials/header/logo.php
+
+$server_ip = gethostbyname($_SERVER['SERVER_NAME']);                
+
+echo esc_html( get_bloginfo( 'name' ) . ": " . $server_ip );
+
+
+$server_ip = getHostByName(getHostName());
+echo esc_html( get_bloginfo( 'name' ) . ": " . $server_ip); 
